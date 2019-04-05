@@ -1,181 +1,207 @@
 package ua.comparison.image;
 
+import ua.comparison.image.model.ComparisonResult;
+import ua.comparison.image.model.Rectangle;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+
 import static java.awt.Color.RED;
-import static java.awt.Color.white;
-import static ua.comparison.image.CommandLineUtil.create;
-import static ua.comparison.image.CommandLineUtil.handleResult;
+import static java.nio.file.Files.createTempFile;
+import static java.util.Optional.ofNullable;
 import static ua.comparison.image.ImageComparisonTools.checkCorrectImageSize;
-import static ua.comparison.image.ImageComparisonTools.createGUI;
 import static ua.comparison.image.ImageComparisonTools.createRectangle;
 import static ua.comparison.image.ImageComparisonTools.deepCopy;
 import static ua.comparison.image.ImageComparisonTools.populateTheMatrixOfTheDifferences;
 import static ua.comparison.image.ImageComparisonTools.readImageFromResources;
 import static ua.comparison.image.ImageComparisonTools.saveImage;
 
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import ua.comparison.image.model.Rectangle;
-
 public class ImageComparison {
 
-    /**
-     * The threshold which means the max distance between non-equal pixels.
-     * Could be changed according size and requirements to the image.
-     */
-    public static int threshold = 5;
+	/**
+	 * Prefix of the name of the result image.
+	 */
+	private static final String NAME_PREFIX = "image-comparison";
+	/**
+	 * Suffix of the name of of the result image.
+	 */
+	private static final String NAME_SUFFIX = ".png";
+	/**
+	 * The threshold which means the max distance between non-equal pixels.
+	 * Could be changed according size and requirements to the image.
+	 */
+	public static int threshold = 5;
 
-    /**
-     * The number which marks how many rectangles. Beginning from 2.
-     */
-    private int counter = 2;
+	/**
+	 * The minimum area size of a difference rectangle.
+	 */
+	public static int minimumRectangleSize = 1;
 
-    /**
-     * The number of the marking specific rectangle.
-     */
-    private int regionCount = counter;
+	/**
+	 * The number which marks how many rectangles. Beginning from 2.
+	 */
+	private int counter = 2;
+	/**
+	 * The number of the marking specific rectangle.
+	 */
+	private int regionCount = counter;
+	/**
+	 * First image for comparing
+	 */
+	private final BufferedImage image1;
+	/**
+	 * Second image for comparing
+	 */
+	private final BufferedImage image2;
+	private int[][] matrix;
+	private ComparisonResult comparisonResult;
 
-    /**
-     * First image for comparing
-     */
-    private final BufferedImage image1;
+	ImageComparison(String image1, String image2) throws IOException, URISyntaxException {
+		this(readImageFromResources(image1), readImageFromResources(image2));
+	}
 
-    /**
-     * Second image for comparing
-     */
-    private final BufferedImage image2;
+	/**
+	 * Create a new instance of {@link ImageComparison} that can compare the given images.
+	 *
+	 * @param image1
+	 * 		first image to be compared
+	 * @param image2
+	 * 		second image to be compared
+	 */
+	public ImageComparison(BufferedImage image1, BufferedImage image2) {
+		this.image1 = image1;
+		this.image2 = image2;
+	}
 
-    private final /* @Nullable */ File destination;
+	/**
+	 * Calculate regions which cover the difference pixels.
+	 *
+	 * @return the result od the comparison
+	 */
+	public ComparisonResult compareImages() {
+		// check images for valid
+		checkCorrectImageSize(image1, image2);
 
-    private int[][] matrix;
+		matrix = populateTheMatrixOfTheDifferences(image1, image2);
 
-    /**
-     * Prefix of the name of the result image.
-     */
-    private static final String NAME_PREFIX = "image-comparison";
+		groupRegions();
 
-    /**
-     * Suffix of the name of of the result image.
-     */
-    private static final String NAME_SUFFIX = ".png";
+		List<Rectangle> rectangles = new ArrayList<>();
+		while (counter <= regionCount) {
+			Rectangle rectangle = createRectangle(matrix, counter);
+			if (!rectangle.equals(Rectangle.createDefault()) && rectangle.getSize() > minimumRectangleSize) {
+				rectangles.add(createRectangle(matrix, counter));
+			}
+			counter++;
+		}
 
-    ImageComparison(String image1, String image2) throws IOException, URISyntaxException {
-        this(readImageFromResources(image1), readImageFromResources(image2), null);
-    }
+		comparisonResult = new ComparisonResult(rectangles);
 
-    /**
-     * Create a new instance of {@link ImageComparison} that can compare the given images.
-     *
-     * @param image1 first image to be compared
-     * @param image2 second image to be compared
-     * @param destination destination to save the result. If null, the result is shown in the UI.
-     */
-    public ImageComparison(BufferedImage image1, BufferedImage image2, File destination) {
-        this.image1 = image1;
-        this.image2 = image2;
-        this.destination = destination;
-    }
+		return comparisonResult;
+	}
 
-    public static void main(String[] args) throws IOException, URISyntaxException {
-        ImageComparison imgCmp = create(args);
-        BufferedImage result = imgCmp.compareImages();
-        handleResult(imgCmp, (file) -> saveImage(file, result), () -> createGUI(result));
-    }
+	public BufferedImage getImage1() {
+		return image1;
+	}
 
-    /**
-     * Draw rectangles which cover the regions of the difference pixels.
-     *
-     * @return the result of the drawing.
-     */
-    public BufferedImage compareImages() throws IOException {
-        // check images for valid
-        checkCorrectImageSize(image1, image2);
+	public BufferedImage getImage2() {
+		return image2;
+	}
 
-        matrix = populateTheMatrixOfTheDifferences(image1, image2);
+	/**
+	 * @return the result of the drawing.
+	 */
+	public BufferedImage getImageComparison() {
+		return getImageComparison(Integer.MAX_VALUE);
+	}
 
-        BufferedImage outImg = deepCopy(image2);
+	/**
+	 * @param maximalDifferences
+	 * 		maximal differences which should be drawn - Beginning with the biggest.
+	 * @return the result of the drawing.
+	 */
+	public BufferedImage getImageComparison(int maximalDifferences) {
+		BufferedImage outImg = deepCopy(image2);
+		Graphics2D graphics = outImg.createGraphics();
+		graphics.setColor(RED);
+		getComparisonResult().getMaxDifferences(maximalDifferences)
+							 .forEach(rectangle -> graphics.drawRect(rectangle.getMinY(), rectangle.getMinX(), rectangle.getWidth(), rectangle.getHeight()));
+		return outImg;
+	}
 
-        Graphics2D graphics = outImg.createGraphics();
-        graphics.setColor(RED);
+	/**
+	 * @param maximalDifferences
+	 * 		maximal differences which should be drawn - Beginning with the biggest.
+	 * @return the result of the drawing.
+	 */
+	public BufferedImage writeImageComparison(File destination, int maximalDifferences) throws IOException {
+		BufferedImage outImg = getImageComparison(maximalDifferences);
+		//save the image:
+		saveImage(ofNullable(destination).orElse(createTempFile(NAME_PREFIX, NAME_SUFFIX).toFile()), outImg);
+		return outImg;
+	}
 
-        groupRegions();
+	/**
+	 * @return the result of the drawing.
+	 */
+	public BufferedImage writeImageComparison() throws IOException {
+		return writeImageComparison(null);
+	}
 
-        List<Rectangle> rectangles = new ArrayList<>();
-        while (counter <= regionCount) {
-            Rectangle rectangle = createRectangle(matrix, counter);
-            if(!rectangle.equals(Rectangle.createDefault())) {
-                rectangles.add(createRectangle(matrix, counter));
-            }
-            counter++;
-        }
+	public BufferedImage writeImageComparison(File destination) throws IOException {
+		return writeImageComparison(destination, Integer.MAX_VALUE);
+	}
 
+	private ComparisonResult getComparisonResult() {
+		if (comparisonResult == null) {
+			comparisonResult = compareImages();
+		}
+		return comparisonResult;
+	}
 
-        rectangles.forEach(rectangle -> graphics.drawRect(rectangle.getMinY(),
-                                                          rectangle.getMinX(),
-                                                          rectangle.getWidth(),
-                                                          rectangle.getHeight()));
+	/**
+	 * Group rectangle regions in matrix.
+	 */
+	private void groupRegions() {
+		for (int row = 0; row < matrix.length; row++) {
+			for (int col = 0; col < matrix[row].length; col++) {
+				if (matrix[row][col] == 1) {
+					joinToRegion(row, col);
+					regionCount++;
+				}
+			}
+		}
+	}
 
-        //save the image:
-        saveImage(this.getDestination().orElse(Files.createTempFile(NAME_PREFIX, NAME_SUFFIX).toFile()), outImg);
-        return outImg;
-    }
+	/**
+	 * The recursive method which go to all directions and finds difference
+	 * in binary matrix using {@code threshold} for setting max distance between values which equal "1".
+	 * and set the {@code groupCount} to matrix.
+	 *
+	 * @param row
+	 * 		the value of the row.
+	 * @param col
+	 * 		the value of the column.
+	 */
+	private void joinToRegion(int row, int col) {
+		if (row < 0 || row >= matrix.length || col < 0 || col >= matrix[row].length || matrix[row][col] != 1) {
+			return;
+		}
 
-    /**
-     * Group rectangle regions in matrix.
-     */
-    private void groupRegions() {
-        for (int row = 0; row < matrix.length; row++) {
-            for (int col = 0; col < matrix[row].length; col++) {
-                if (matrix[row][col] == 1) {
-                    joinToRegion(row, col);
-                    regionCount++;
-                }
-            }
-        }
-    }
+		matrix[row][col] = regionCount;
 
-    /**
-     * The recursive method which go to all directions and finds difference
-     * in binary matrix using {@code threshold} for setting max distance between values which equal "1".
-     * and set the {@code groupCount} to matrix.
-     *
-     * @param row the value of the row.
-     * @param col the value of the column.
-     */
-    private void joinToRegion(int row, int col) {
-        if (row < 0 || row >= matrix.length || col < 0 || col >= matrix[row].length || matrix[row][col] != 1) {
-            return;
-        }
+		for (int i = 0; i < threshold; i++) {
+			joinToRegion(row + 1 + i, col);
+			joinToRegion(row, col + 1 + i);
 
-        matrix[row][col] = regionCount;
-
-        for (int i = 0; i < threshold; i++) {
-            joinToRegion(row + 1 + i, col);
-            joinToRegion(row, col + 1 + i);
-
-            joinToRegion(row + 1 + i, col - 1 - i);
-            joinToRegion(row - 1 - i, col + 1 + i);
-            joinToRegion(row + 1 + i, col + 1 + i);
-        }
-    }
-
-    Optional<File> getDestination() {
-        return Optional.ofNullable(destination);
-    }
-
-    public BufferedImage getImage1() {
-        return image1;
-    }
-
-    public BufferedImage getImage2() {
-        return image2;
-    }
+			joinToRegion(row + 1 + i, col - 1 - i);
+			joinToRegion(row - 1 - i, col + 1 + i);
+			joinToRegion(row + 1 + i, col + 1 + i);
+		}
+	}
 }

@@ -3,7 +3,7 @@ package ua.comparison.image.model;
 /**
  * Object contained data for a rectangle.
  */
-public class Rectangle {
+public class Rectangle implements Comparable<Rectangle>{
 
     private int minX;
     private int minY;
@@ -22,6 +22,11 @@ public class Rectangle {
         defaultRectangle.setMinY(Integer.MAX_VALUE);
 
         return defaultRectangle;
+    }
+
+    @Override
+    public int compareTo(Rectangle other) {
+        return other.getSize() - getSize();
     }
 
     public void merge(Rectangle that) {
@@ -90,6 +95,10 @@ public class Rectangle {
         return maxX - minX;
     }
 
+    public int getSize(){
+        return getHeight() + getWidth();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -120,5 +129,10 @@ public class Rectangle {
         result = 31 * result + maxX;
         result = 31 * result + maxY;
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Rect{ "+minX+", "+minY+" : "+getWidth()+" x "+getWidth()+" }";
     }
 }
