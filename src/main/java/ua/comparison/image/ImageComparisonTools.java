@@ -1,43 +1,19 @@
 package ua.comparison.image;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Frame;
+import ua.comparison.image.model.Rectangle;
+
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.WindowConstants;
-import ua.comparison.image.model.Rectangle;
 
 /**
  * Tools for the {@link ImageComparison} object.
  */
 public class ImageComparisonTools {
-
-    /**
-     * Create GUI for represents the resulting image.
-     *
-     * @param image resulting image.
-     */
-    public static Frame createGUI(BufferedImage image) {
-        JFrame frame = new JFrame("The result of the comparison");
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        JLabel label = new JLabel();
-        label.setIcon(new ImageIcon(image, "Result"));
-        frame.getContentPane().add(label, BorderLayout.CENTER);
-        frame.setPreferredSize(new Dimension(image.getWidth(), (int) (image.getHeight())));
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-        return frame;
-    }
 
     /**
      * Make a copy of the {@link BufferedImage} object.
