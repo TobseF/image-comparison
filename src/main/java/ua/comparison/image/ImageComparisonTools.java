@@ -64,6 +64,18 @@ public class ImageComparisonTools {
 	}
 
 	/**
+	 * Check images for not equals their widths and heights.
+	 *
+	 * @param image1
+	 *        {@link BufferedImage} object of the first image.
+	 * @param image2
+	 *        {@link BufferedImage} object of the second image.
+	 */
+	public static boolean hasNotSameImageSize(BufferedImage image1, BufferedImage image2) {
+		return !hasSameImageSize(image1, image2);
+	}
+
+	/**
 	 * Say if the two pixels equal or not. The rule is the difference between two pixels
 	 * need to be more then 10%.
 	 *

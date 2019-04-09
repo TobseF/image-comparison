@@ -16,7 +16,7 @@ import static java.nio.file.Files.createTempFile;
 import static java.util.Optional.ofNullable;
 import static ua.comparison.image.ImageComparisonTools.createRectangle;
 import static ua.comparison.image.ImageComparisonTools.deepCopy;
-import static ua.comparison.image.ImageComparisonTools.hasSameImageSize;
+import static ua.comparison.image.ImageComparisonTools.hasNotSameImageSize;
 import static ua.comparison.image.ImageComparisonTools.populateTheMatrixOfTheDifferences;
 import static ua.comparison.image.ImageComparisonTools.readImageFromResources;
 import static ua.comparison.image.ImageComparisonTools.saveImage;
@@ -85,7 +85,7 @@ public class ImageComparison {
 	 */
 	public ComparisonResult compareImages() {
 
-		if (hasSameImageSize(image1, image2)) {
+		if (hasNotSameImageSize(image1, image2)) {
 			return ComparisonResult.sizeMissmatch();
 		}
 
