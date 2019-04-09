@@ -14,9 +14,9 @@ import java.util.List;
 import static java.awt.Color.RED;
 import static java.nio.file.Files.createTempFile;
 import static java.util.Optional.ofNullable;
-import static ua.comparison.image.ImageComparisonTools.checkCorrectImageSize;
 import static ua.comparison.image.ImageComparisonTools.createRectangle;
 import static ua.comparison.image.ImageComparisonTools.deepCopy;
+import static ua.comparison.image.ImageComparisonTools.hasSameImageSize;
 import static ua.comparison.image.ImageComparisonTools.populateTheMatrixOfTheDifferences;
 import static ua.comparison.image.ImageComparisonTools.readImageFromResources;
 import static ua.comparison.image.ImageComparisonTools.saveImage;
@@ -84,14 +84,17 @@ public class ImageComparison {
 	 * @return the result od the comparison
 	 */
 	public ComparisonResult compareImages() {
-		// check images for valid
-		checkCorrectImageSize(image1, image2);
+
+		if (hasSameImageSize(image1, image2)) {
+			return ComparisonResult.sizeMissmatch();
+		}
 
 		matrix = populateTheMatrixOfTheDifferences(image1, image2);
 
+		List<Rectangle> rectangles = new ArrayList<>();
+
 		groupRegions();
 
-		List<Rectangle> rectangles = new ArrayList<>();
 		while (counter <= regionCount) {
 			Rectangle rectangle = createRectangle(matrix, counter);
 			if (!rectangle.equals(Rectangle.createDefault()) && rectangle.getSize() > minimumRectangleSize) {
@@ -99,9 +102,7 @@ public class ImageComparison {
 			}
 			counter++;
 		}
-
 		comparisonResult = new ComparisonResult(rectangles);
-
 		return comparisonResult;
 	}
 
@@ -135,9 +136,12 @@ public class ImageComparison {
 	}
 
 	/**
+	 * Write an image which visualizes the differences between the two images into to provided file.
+	 *
 	 * @param maximalDifferences
-	 * 		maximal differences which should be drawn - Beginning with the biggest.
+	 * 		maximal differences which should be drawn - Beginning with the biggest. This limit helps to speedup the drawing process.
 	 * @return the result of the drawing.
+	 * @see #writeImageComparison(File, int)
 	 */
 	public BufferedImage writeImageComparison(File destination, int maximalDifferences) throws IOException {
 		BufferedImage outImg = getImageComparison(maximalDifferences);
@@ -147,12 +151,21 @@ public class ImageComparison {
 	}
 
 	/**
+	 * Write an image which visualizes the differences between the two images. It will be saved to the temp folder.
+	 *
 	 * @return the result of the drawing.
+	 * @see #writeImageComparison(File)
 	 */
 	public BufferedImage writeImageComparison() throws IOException {
 		return writeImageComparison(null);
 	}
 
+	/**
+	 * Write an image which visualizes the differences between the two images into to provided file.
+	 *
+	 * @return the result of the drawing.
+	 * @see #writeImageComparison(File, int)
+	 */
 	public BufferedImage writeImageComparison(File destination) throws IOException {
 		return writeImageComparison(destination, Integer.MAX_VALUE);
 	}

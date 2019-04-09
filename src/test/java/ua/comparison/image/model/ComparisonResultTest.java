@@ -5,7 +5,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class ComparisonResultTest {
 
@@ -27,7 +27,7 @@ public class ComparisonResultTest {
 		assertEquals(3, result.getMaxDifferences(3).size());
 	}
 
-	public Rectangle newRectangle(int size){
+	public Rectangle newRectangle(int size) {
 		Rectangle rectangle = new Rectangle();
 		rectangle.setMaxX(size);
 		rectangle.setMaxY(size);
