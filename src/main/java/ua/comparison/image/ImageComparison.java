@@ -20,6 +20,7 @@ import static ua.comparison.image.ImageComparisonTools.hasNotSameImageSize;
 import static ua.comparison.image.ImageComparisonTools.populateTheMatrixOfTheDifferences;
 import static ua.comparison.image.ImageComparisonTools.readImageFromResources;
 import static ua.comparison.image.ImageComparisonTools.saveImage;
+import static ua.comparison.image.model.Rectangle.defaultRectangle;
 
 public class ImageComparison {
 
@@ -86,7 +87,8 @@ public class ImageComparison {
 	public ComparisonResult compareImages() {
 
 		if (hasNotSameImageSize(image1, image2)) {
-			return ComparisonResult.sizeMissmatch();
+			comparisonResult = ComparisonResult.sizeMissmatch();
+			return comparisonResult;
 		}
 
 		matrix = populateTheMatrixOfTheDifferences(image1, image2);
@@ -97,8 +99,8 @@ public class ImageComparison {
 
 		while (counter <= regionCount) {
 			Rectangle rectangle = createRectangle(matrix, counter);
-			if (!rectangle.equals(Rectangle.createDefault()) && rectangle.getSize() > minimumRectangleSize) {
-				rectangles.add(createRectangle(matrix, counter));
+			if (!rectangle.equals(defaultRectangle) && rectangle.getSize() >= minimumRectangleSize) {
+				rectangles.add(rectangle);
 			}
 			counter++;
 		}

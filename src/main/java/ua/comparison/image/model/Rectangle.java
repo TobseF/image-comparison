@@ -10,6 +10,8 @@ public class Rectangle implements Comparable<Rectangle>{
     private int maxX;
     private int maxY;
 
+	public static Rectangle defaultRectangle = createDefault();
+
     /**
      * Create default {@link Rectangle} object.
      */

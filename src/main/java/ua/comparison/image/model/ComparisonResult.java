@@ -19,7 +19,7 @@ public class ComparisonResult {
 	}
 
 	private ComparisonResult(CheckResult checkResult, List<Rectangle> differences) {
-		this.checkResult = differences.isEmpty() ? CheckResult.Match : CheckResult.ImageMissmatch;
+		this.checkResult = checkResult;
 		this.differences = differences;
 	}
 
@@ -63,5 +63,10 @@ public class ComparisonResult {
 
 	private Stream<Rectangle> getSortedDifferences() {
 		return differences.stream().sorted();
+	}
+
+	@Override
+	public String toString() {
+		return "ComparisonResult{" + "checkResult=" + checkResult + ", differences=" + differences.size() + '}';
 	}
 }
